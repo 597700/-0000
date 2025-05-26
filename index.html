@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>换汇换算平台</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @keyframes flashBanner {
+      0%, 98% { opacity: 1; }
+      99% { opacity: 0; }
+      100% { opacity: 1; }
+    }
+    .blink-every-3min {
+      animation: flashBanner 180s linear infinite;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+  <!-- 闪烁横幅 -->
+  <div id="banner" class="w-full bg-yellow-300 text-center py-2 relative">
+    <div class="text-sm font-semibold text-gray-800">
+      🔔 汇率每日实时自动更新 🔔
+    </div>
+    <button onclick="document.getElementById('banner').style.display='none'" class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-700 hover:text-red-600 font-bold">✕</button>
+  </div>
+
+  <div class="max-w-xl mx-auto mt-10 p-6 bg-white rounded-2xl shadow-lg">
+    <h1 class="text-2xl font-bold mb-6 text-center">换汇换算平台</h1>
+
+    <!-- 金额 -->
+    <div class="mb-4">
+      <label class="block text-sm font-medium mb-1">原金额</label>
+      <input id="amount" type="number" placeholder="输入金额" class="w-full p-2 border rounded" />
+    </div>
+
+    <!-- 币种选择 -->
+    <div class="grid grid-cols-2 gap-4 mb-4">
+      <div>
+        <label class="block text-sm font-medium mb-1">原币种</label>
+        <select id="fromCurrency" class="w-full p-2 border rounded" onchange="updateRateFromLiveData()">
+          <option value="GHS">GHS</option>
+          <option value="USD">USD</option>
+          <option value="CNY">CNY</option>
+          <option value="EUR">EUR</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">目标币种</label>
+        <select id="toCurrency" class="w-full p-2 border rounded" onchange="updateRateFromLiveData()">
+          <option value="USD">USD</option>
+          <option value="GHS">GHS</option>
+          <option value="CNY">CNY</option>
+          <option value="EUR">EUR</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- 用户输入汇率 -->
+    <div class="mb-4">
+      <label class="block text-sm font-medium mb-1">汇率（1 原币 = ? 目标币）</label>
+      <input id="rate" type="number" step="0.0001" placeholder="请输入汇率" class="w-full p-2 border rounded" />
+    </div>
+
+    <!-- 换算按钮 -->
+    <div class="mb-6">
+      <button onclick="convert()" class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">
+        立即换算
+      </button>
+    </div>
+
+    <!-- 结果显示 -->
+    <div id="result" class="text-center text-xl font-semibold text-purple-700 mb-6"></div>
+
+    <!-- 实时汇率板块 -->
+    <div class="bg-gray-50 p-4 rounded-xl border">
+      <h2 class="text-lg font-bold mb-2 text-center text-gray-700">🌐 实时汇率（USD 基准）</h2>
+      <ul id="liveRates" class="space-y-1 text-sm text-gray-600 text-center">加载中...</ul>
+      <p id="lastUpdate" class="mt-2 text-xs text-center text-gray-500">更新时间加载中...</p>
+    </div>
+  </div>
+
+  <script>
+    let liveData = {};
+
+    function convert() {
+      const amount = parseFloat(document.getElementById("amount").value);
+      const rate = parseFloat(document.getElementById("rate").value);
+      const from = document.getElementById("fromCurrency").value;
+      const to = document.getElementById("toCurrency").value;
+
+      if (isNaN(amount) || isNaN(rate)) {
+        document.getElementById("result").textContent = "请输入有效的金额和汇率。";
+        return;
+      }
+
+      const result = amount * rate;
+      document.getElementById("result").textContent = `${amount} ${from} ≈ ${result.toFixed(2)} ${to}`;
+    }
+
+    async function fetchLiveRates() {
+      const url = "https://open.er-api.com/v6/latest/USD";
+      try {
+        const res = await fetch(url);
+        const data = await res.json();
+        const rates = data.rates;
+        liveData = rates;
+
+        const targetCurrencies = ["GHS", "CNY", "EUR"];
+        const list = targetCurrencies.map(
+          (currency) => `<li>1 USD ≈ ${rates[currency].toFixed(4)} ${currency}</li>`
+        ).join("");
+
+        document.getElementById("liveRates").innerHTML = list;
+        document.getElementById("lastUpdate").textContent = `更新时间：${data.time_last_update_utc}`;
+        updateRateFromLiveData();
+      } catch (err) {
+        document.getElementById("liveRates").textContent = "获取汇率失败，请检查网络连接";
+        document.getElementById("lastUpdate").textContent = "获取更新时间失败";
+      }
+    }
+
+    function updateRateFromLiveData() {
+      const from = document.getElementById("fromCurrency").value;
+      const to = document.getElementById("toCurrency").value;
+
+      if (!liveData[from] || !liveData[to]) {
+        document.getElementById("rate").value = "";
+        return;
+      }
+
+      const usdToFrom = liveData[from];
+      const usdToTo = liveData[to];
+      const fromToToRate = usdToTo / usdToFrom;
+      document.getElementById("rate").value = fromToToRate.toFixed(4);
+    }
+
+    window.onload = () => {
+      const banner = document.getElementById("banner");
+      if (banner) banner.classList.add("blink-every-3min");
+      fetchLiveRates();
+    };
+  </script>
+</body>
+</html>
