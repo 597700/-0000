@@ -158,7 +158,7 @@
     function updateOrderHistory() {
       const orderHistory = document.getElementById("orderHistory");
       orderHistory.innerHTML = orders.map(order => 
-        `<p>订单：${order.amount} ${currency} - 区域：${order.region} - 联系方式：${order.contact} - 时间：${order.timestamp}</p>`
+        `<p>订单：${order.amount} ${order.currency} - 区域：${order.region} - 联系方式：${order.contact} - 时间：${order.timestamp}</p>`
       ).join("");
     }
 
