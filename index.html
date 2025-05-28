@@ -142,12 +142,15 @@
 
       // 发送订单信息到接收邮箱
       const orderDetails = `订单：${amount} ${currency} - 区域：${region} - 联系方式：${contact} - 时间：${timestamp}`;
-      emailjs.send("service_hxwtckq", "template_4hy7u5i", {
+      emailjs.send("service_hxwtckq", "template_9enl06e", {
         to_email: "aiguo5977@gmail.com",
         order_details: orderDetails
       }).then(
         () => alert("订单提交成功！已发送至邮箱。"),
-        (error) => alert("订单提交成功，但发送邮箱失败：" + error.text)
+        (error) => {
+          console.error("EmailJS 错误:", error); // 记录详细错误
+          alert("订单提交成功，但发送邮箱失败：" + JSON.stringify(error));
+        }
       );
 
       document.getElementById("orderAmount").value = "";
